@@ -20,6 +20,7 @@ void mostrarProductosActivos();
 void mostrarPorCategoria();
 void buscarPorCodigo();
 void modificarProducto();
+void eliminarProducto();
 bool existeCodigo(int codigo);
 void limpiarBuffer();
 
@@ -36,6 +37,7 @@ int main() {
             case 3: mostrarPorCategoria(); break;
             case 4: buscarPorCodigo(); break;
             case 5: modificarProducto(); break;
+            case 6: eliminarProducto(); break;
             case 9: cout << "Exiting...\n"; break;
             default: cout << "Invalid option\n";
         }
@@ -51,6 +53,7 @@ void mostrarMenu() {
          << "\n3. Show products by category"
          << "\n4. Search product by code"
          << "\n5. Modify product"
+         << "\n6. Delete product (logical)"
          << "\n9. Exit"
          << "\nSelect an option: ";
 }
@@ -216,4 +219,34 @@ void modificarProducto() {
     archivo.seekp(pos);
     archivo.write(reinterpret_cast<char*>(&p), sizeof(p));
     cout << "Product modified successfully!\n";
+}
+
+void eliminarProducto() {
+    fstream archivo(ARCHIVO, ios::binary | ios::in | ios::out);
+    if (!archivo) {
+        cout << "No products registered\n";
+        return;
+    }
+    int cod;
+    cout << "Enter code of the product to delete: ";
+    cin >> cod;
+    limpiarBuffer();
+    Producto p;
+    bool found = false;
+    streampos pos;
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
+        if (p.codigo == cod && p.activo) {
+            pos = archivo.tellg() - static_cast<streampos>(sizeof(p));
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        cout << "Product not found or already inactive\n";
+        return;
+    }
+    p.activo = false;
+    archivo.seekp(pos);
+    archivo.write(reinterpret_cast<char*>(&p), sizeof(p));
+    cout << "Product set as inactive!\n";
 }
