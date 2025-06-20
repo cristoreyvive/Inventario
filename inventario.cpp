@@ -17,6 +17,8 @@ const string ARCHIVO = "inventario.dat";
 void mostrarMenu();
 void agregarProducto();
 void mostrarProductosActivos();
+void mostrarPorCategoria();
+void buscarPorCodigo();
 bool existeCodigo(int codigo);
 void limpiarBuffer();
 
@@ -30,8 +32,10 @@ int main() {
         switch(opcion) {
             case 1: agregarProducto(); break;
             case 2: mostrarProductosActivos(); break;
-            case 9: cout << "Saliendo...\n"; break;
-            default: cout << "Opcion invalida\n";
+            case 3: mostrarPorCategoria(); break;
+            case 4: buscarPorCodigo(); break;
+            case 9: cout << "Exiting...\n"; break;
+            default: cout << "Invalid option\n";
         }
     } while(opcion != 9);
 
@@ -39,11 +43,13 @@ int main() {
 }
 
 void mostrarMenu() {
-    cout << "\n===== MENU PRINCIPAL ====="
-         << "\n1. Agregar nuevo producto"
-         << "\n2. Mostrar productos activos"
-         << "\n9. Salir"
-         << "\nSeleccione una opcion: ";
+    cout << "\n===== MAIN MENU ====="
+         << "\n1. Add new product"
+         << "\n2. Show active products"
+         << "\n3. Show products by category"
+         << "\n4. Search product by code"
+         << "\n9. Exit"
+         << "\nSelect an option: ";
 }
 
 void limpiarBuffer() {
@@ -63,60 +69,112 @@ bool existeCodigo(int codigo) {
 void agregarProducto() {
     ofstream archivo(ARCHIVO, ios::binary | ios::app);
     if (!archivo) {
-        cerr << "Error al abrir el archivo\n";
+        cerr << "Error opening file\n";
         return;
     }
     Producto nuevo;
-    cout << "\n--- Agregar Producto ---\n";
+    cout << "\n--- Add Product ---\n";
     do {
-        cout << "Codigo (entero positivo): ";
+        cout << "Code (positive integer): ";
         cin >> nuevo.codigo;
         if (cin.fail() || nuevo.codigo < 1) {
-            cout << "Codigo invalido. ";
+            cout << "Invalid code. ";
             limpiarBuffer();
             continue;
         }
         if (existeCodigo(nuevo.codigo)) {
-            cout << "Ya existe un producto con ese codigo. Intente otro.\n";
+            cout << "A product with this code already exists. Try another.\n";
             limpiarBuffer();
             nuevo.codigo = -1;
         }
     } while (nuevo.codigo < 1);
 
     limpiarBuffer();
-    cout << "Nombre (max 30): ";
+    cout << "Name (max 30): ";
     cin.getline(nuevo.nombre, 31);
-    cout << "Precio: ";
+    cout << "Price: ";
     cin >> nuevo.precio;
     cout << "Stock: ";
     cin >> nuevo.stock;
     limpiarBuffer();
-    cout << "Categoria (max 20): ";
+    cout << "Category (max 20): ";
     cin.getline(nuevo.categoria, 21);
 
     nuevo.activo = true;
     archivo.write(reinterpret_cast<char*>(&nuevo), sizeof(nuevo));
-    cout << "Producto agregado exitosamente!\n";
+    cout << "Product added successfully!\n";
 }
 
 void mostrarProductosActivos() {
     ifstream archivo(ARCHIVO, ios::binary);
     if (!archivo) {
-        cout << "No hay productos registrados\n";
+        cout << "No products registered\n";
         return;
     }
-    cout << "\n--- Productos Activos ---\n";
+    cout << "\n--- Active Products ---\n";
     Producto p;
     bool hay = false;
     while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
         if (p.activo) {
-            cout << "Codigo: " << p.codigo
-                 << " | Nombre: " << p.nombre
-                 << " | Precio: " << p.precio
+            cout << "Code: " << p.codigo
+                 << " | Name: " << p.nombre
+                 << " | Price: " << p.precio
                  << " | Stock: " << p.stock
-                 << " | Categoria: " << p.categoria << endl;
+                 << " | Category: " << p.categoria << endl;
             hay = true;
         }
     }
-    if (!hay) cout << "No hay productos activos\n";
+    if (!hay) cout << "No active products\n";
+}
+
+void mostrarPorCategoria() {
+    ifstream archivo(ARCHIVO, ios::binary);
+    if (!archivo) {
+        cout << "No products registered\n";
+        return;
+    }
+    char cat[21];
+    cout << "Enter category to search (max 20): ";
+    cin.getline(cat, 21);
+    cout << "\n--- Products in '" << cat << "' ---\n";
+    Producto p;
+    bool found = false;
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
+        if (p.activo && strcmp(p.categoria, cat) == 0) {
+            cout << "Code: " << p.codigo
+                 << " | Name: " << p.nombre
+                 << " | Price: " << p.precio
+                 << " | Stock: " << p.stock << endl;
+            found = true;
+        }
+    }
+    if (!found) cout << "No products found\n";
+}
+
+void buscarPorCodigo() {
+    ifstream archivo(ARCHIVO, ios::binary);
+    if (!archivo) {
+        cout << "No products registered\n";
+        return;
+    }
+    int cod;
+    cout << "Enter code to search: ";
+    cin >> cod;
+    limpiarBuffer();
+    Producto p;
+    bool found = false;
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
+        if (p.codigo == cod) {
+            cout << "\n--- Product Found ---"
+                 << "\nCode: " << p.codigo
+                 << "\nName: " << p.nombre
+                 << "\nPrice: " << p.precio
+                 << "\nStock: " << p.stock
+                 << "\nCategory: " << p.categoria
+                 << "\nStatus: " << (p.activo ? "Active" : "Inactive") << endl;
+            found = true;
+            break;
+        }
+    }
+    if (!found) cout << "Product not found\n";
 }
