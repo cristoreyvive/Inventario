@@ -22,6 +22,7 @@ void buscarPorCodigo();
 void modificarProducto();
 void eliminarProducto();
 bool existeCodigo(int codigo);
+bool entradaValida(double valor);
 void limpiarBuffer();
 
 int main() {
@@ -72,6 +73,10 @@ bool existeCodigo(int codigo) {
     return false;
 }
 
+bool entradaValida(double valor) {
+    return !cin.fail() && valor >= 0;
+}
+
 void agregarProducto() {
     ofstream archivo(ARCHIVO, ios::binary | ios::app);
     if (!archivo) {
@@ -98,13 +103,34 @@ void agregarProducto() {
     limpiarBuffer();
     cout << "Name (max 30): ";
     cin.getline(nuevo.nombre, 31);
+    while(strlen(nuevo.nombre) == 0) {
+        cout << "Name cannot be empty: ";
+        cin.getline(nuevo.nombre, 31);
+    }
+
     cout << "Price: ";
     cin >> nuevo.precio;
+    while (!entradaValida(nuevo.precio)) {
+        cout << "Invalid price. Try again: ";
+        limpiarBuffer();
+        cin >> nuevo.precio;
+    }
+
     cout << "Stock: ";
     cin >> nuevo.stock;
+    while (cin.fail() || nuevo.stock < 0) {
+        cout << "Invalid stock. Try again: ";
+        limpiarBuffer();
+        cin >> nuevo.stock;
+    }
     limpiarBuffer();
+
     cout << "Category (max 20): ";
     cin.getline(nuevo.categoria, 21);
+    while(strlen(nuevo.categoria) == 0) {
+        cout << "Category cannot be empty: ";
+        cin.getline(nuevo.categoria, 21);
+    }
 
     nuevo.activo = true;
     archivo.write(reinterpret_cast<char*>(&nuevo), sizeof(nuevo));
@@ -142,9 +168,11 @@ void mostrarPorCategoria() {
     char cat[21];
     cout << "Enter category to search (max 20): ";
     cin.getline(cat, 21);
+
     cout << "\n--- Products in '" << cat << "' ---\n";
     Producto p;
     bool found = false;
+
     while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
         if (p.activo && strcmp(p.categoria, cat) == 0) {
             cout << "Code: " << p.codigo
@@ -154,6 +182,7 @@ void mostrarPorCategoria() {
             found = true;
         }
     }
+
     if (!found) cout << "No products found\n";
 }
 
@@ -167,8 +196,10 @@ void buscarPorCodigo() {
     cout << "Enter code to search: ";
     cin >> cod;
     limpiarBuffer();
+
     Producto p;
     bool found = false;
+
     while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
         if (p.codigo == cod) {
             cout << "\n--- Product Found ---"
@@ -182,6 +213,7 @@ void buscarPorCodigo() {
             break;
         }
     }
+
     if (!found) cout << "Product not found\n";
 }
 
@@ -195,9 +227,11 @@ void modificarProducto() {
     cout << "Enter code of the product to modify: ";
     cin >> cod;
     limpiarBuffer();
+
     Producto p;
     bool found = false;
     streampos pos;
+
     while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
         if (p.codigo == cod) {
             pos = archivo.tellg() - static_cast<streampos>(sizeof(p));
@@ -205,17 +239,36 @@ void modificarProducto() {
             break;
         }
     }
+
     if (!found) {
         cout << "Product not found\n";
         return;
     }
+
     cout << "New price: ";
     cin >> p.precio;
+    while (!entradaValida(p.precio)) {
+        cout << "Invalid price. Try again: ";
+        limpiarBuffer();
+        cin >> p.precio;
+    }
+
     cout << "New stock: ";
     cin >> p.stock;
+    while (cin.fail() || p.stock < 0) {
+        cout << "Invalid stock. Try again: ";
+        limpiarBuffer();
+        cin >> p.stock;
+    }
     limpiarBuffer();
+
     cout << "New category (max 20): ";
     cin.getline(p.categoria, 21);
+    while(strlen(p.categoria) == 0) {
+        cout << "Category cannot be empty: ";
+        cin.getline(p.categoria, 21);
+    }
+
     archivo.seekp(pos);
     archivo.write(reinterpret_cast<char*>(&p), sizeof(p));
     cout << "Product modified successfully!\n";
@@ -231,9 +284,11 @@ void eliminarProducto() {
     cout << "Enter code of the product to delete: ";
     cin >> cod;
     limpiarBuffer();
+
     Producto p;
     bool found = false;
     streampos pos;
+
     while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
         if (p.codigo == cod && p.activo) {
             pos = archivo.tellg() - static_cast<streampos>(sizeof(p));
@@ -241,10 +296,12 @@ void eliminarProducto() {
             break;
         }
     }
+
     if (!found) {
         cout << "Product not found or already inactive\n";
         return;
     }
+
     p.activo = false;
     archivo.seekp(pos);
     archivo.write(reinterpret_cast<char*>(&p), sizeof(p));
