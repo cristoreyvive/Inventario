@@ -19,6 +19,7 @@ void agregarProducto();
 void mostrarProductosActivos();
 void mostrarPorCategoria();
 void buscarPorCodigo();
+void modificarProducto();
 bool existeCodigo(int codigo);
 void limpiarBuffer();
 
@@ -34,6 +35,7 @@ int main() {
             case 2: mostrarProductosActivos(); break;
             case 3: mostrarPorCategoria(); break;
             case 4: buscarPorCodigo(); break;
+            case 5: modificarProducto(); break;
             case 9: cout << "Exiting...\n"; break;
             default: cout << "Invalid option\n";
         }
@@ -48,6 +50,7 @@ void mostrarMenu() {
          << "\n2. Show active products"
          << "\n3. Show products by category"
          << "\n4. Search product by code"
+         << "\n5. Modify product"
          << "\n9. Exit"
          << "\nSelect an option: ";
 }
@@ -177,4 +180,40 @@ void buscarPorCodigo() {
         }
     }
     if (!found) cout << "Product not found\n";
+}
+
+void modificarProducto() {
+    fstream archivo(ARCHIVO, ios::binary | ios::in | ios::out);
+    if (!archivo) {
+        cout << "No products registered\n";
+        return;
+    }
+    int cod;
+    cout << "Enter code of the product to modify: ";
+    cin >> cod;
+    limpiarBuffer();
+    Producto p;
+    bool found = false;
+    streampos pos;
+    while (archivo.read(reinterpret_cast<char*>(&p), sizeof(p))) {
+        if (p.codigo == cod) {
+            pos = archivo.tellg() - static_cast<streampos>(sizeof(p));
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        cout << "Product not found\n";
+        return;
+    }
+    cout << "New price: ";
+    cin >> p.precio;
+    cout << "New stock: ";
+    cin >> p.stock;
+    limpiarBuffer();
+    cout << "New category (max 20): ";
+    cin.getline(p.categoria, 21);
+    archivo.seekp(pos);
+    archivo.write(reinterpret_cast<char*>(&p), sizeof(p));
+    cout << "Product modified successfully!\n";
 }
